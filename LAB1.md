@@ -1,6 +1,6 @@
 # Check hardware virtualization support
-sudo apt install cpu-checker
-kvm-ok
+    sudo apt install cpu-checker
+    kvm-ok
 
 # Install KVM and libvirt
 
