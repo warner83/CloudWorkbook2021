@@ -46,15 +46,12 @@
   
 # Expose a service
   # Dockerfile:
-  
-  FROM ubuntu
-  
-  RUN apt-get update && apt-get install -y nginx
-  
-  EXPOSE 80
-  
-  CMD ["nginx", "-g", "daemon off;"]
-  
+
+    FROM ubuntu
+    RUN apt-get update && apt-get install -y nginx
+    EXPOSE 80
+    CMD ["nginx", "-g", "daemon off;"]
+
   docker run -p 80:80 nginx-ubuntu
   
   curl http://127.0.0.1/
