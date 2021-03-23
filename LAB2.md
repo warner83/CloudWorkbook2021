@@ -30,7 +30,7 @@
   
 # Define a custom image
 
-  # Dockerfile:
+  Dockerfile:
   
   FROM ubuntu
   RUN apt-get update && apt-get install -y python3
