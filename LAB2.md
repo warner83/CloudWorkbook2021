@@ -35,13 +35,10 @@
 
   #Dockerfile:
   
-  FROM ubuntu
-  
-  RUN apt-get update && apt-get install -y python3
-  
-  ADD ./my_program.py /root/
-  
-  CMD ["/usr/bin/python3", "/root/my_program.py"]
+    FROM ubuntu
+    RUN apt-get update && apt-get install -y python3
+    ADD ./my_program.py /root/
+    CMD ["/usr/bin/python3", "/root/my_program.py"]
   
   docker build -t custom-ubuntu .
   
