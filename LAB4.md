@@ -31,6 +31,8 @@
     connection.close()
 
 # Consumer Code
+    import pika
+    
     # Connect to RabbitMQ
     connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.5'))
     channel = connection.channel()
