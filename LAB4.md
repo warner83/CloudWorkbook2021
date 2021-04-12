@@ -31,20 +31,23 @@
     connection.close()
 
 # Consumer Code
-    import pika
-
     # Connect to RabbitMQ
-    connection = pika.BlockingConnection(pika.ConnectionParameters('172.17.0.5'))
+    connection = pika.BlockingConnection(pika.ConnectionParameters(host='172.17.0.5'))
     channel = connection.channel()
 
-    # Create a queue
+    # Connect to a queue
     channel.queue_declare(queue='hello')
 
-    # Send the message
-    channel.basic_publish(exchange='', routing_key='hello', body='Hello World!')
+    # Define a callback invoked every time a message is received
+    def callback(ch, method, properties, body):
+        print(" [x] Received %r" % body)
 
-    # Close the channel
-    connection.close()
+    # Subscribe to the queue and assign the callback
+    channel.basic_consume(queue='hello', on_message_callback=callback, auto_ack=True)
+
+    print(' [*] Waiting for messages. To exit press CTRL+C')
+    channel.start_consuming()
+
     
 # Build and run
     docker build -t rabbitmq-consumer .
