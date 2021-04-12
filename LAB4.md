@@ -22,7 +22,7 @@
     channel = connection.channel()
 
     # Create a queue
-    channel.queue_declare(queue='hello’)
+    channel.queue_declare(queue='hello')
 
     # Send the message
     channel.basic_publish(exchange='', routing_key='hello', body='Hello World!')
