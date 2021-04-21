@@ -61,7 +61,176 @@
       migration-auth-type: ssh
       virt-type: qemu
       openstack-origin: cloud:bionic-train
+# Deploy
+    juju deploy --to 1 --config compute.yaml nova-compute
+    juju add-unit --to 2 nova-compute
 
+# [ON MANAGER] Deploy neutron compute
+# Create a new file neutron.yaml
+    neutron-gateway:
+        bridge-mappings:         physnet1:br-ex
+        data-port:               br-ex:vlan2
+        openstack-origin: cloud:bionic-train
+
+     neutron-api:
+        flat-network-providers:  physnet1
+        overlay-network-type: gre
+        neutron-security-groups: True
+        openstack-origin: cloud:bionic-train
+        
+    neutron-openvswitch:
+       bridge-mappings:         physnet1:br-ex
+       data-port:               br-ex:vlan2
+       firewall-driver:         openvswitch
+
+# Deploy
+    juju deploy --to 0 --config neutron.yaml neutron-gateway
+    juju deploy --to lxd:0 --config neutron.yaml neutron-api
+    juju deploy --config neutron.yaml neutron-openvswitch
     
+    juju add-relation neutron-api:neutron-plugin-api neutron-gateway:neutron-plugin-api
+    juju add-relation neutron-api:neutron-plugin-api neutron-openvswitch:neutron-plugin-api
+    juju add-relation neutron-openvswitch:neutron-plugin nova-compute:neutron-plugin
+
+# [ON MANAGER] Deploy MySQL
+# Create a new file mysql.yaml
+
+    mysql:
+      max-connections: 20000
+      source: cloud:bionic-train
+# Deploy
+    juju deploy --to lxd:0 --config mysql.yaml percona-cluster mysql
+    juju add-relation neutron-api:shared-db mysql:shared-db
+    
+# [ON MANAGER] Deploy Keystone
+# Create a new file keystone.yaml
+
+    keystone:
+      admin-password: openstack
+      openstack-origin: cloud:bionic-train
+
+# Deploy
+
+    juju deploy --to lxd:0 --config keystone.yaml keystone
+    juju add-relation keystone:shared-db mysql:shared-db
+    juju add-relation keystone:identity-service neutron-api:identity-service
+
+# [ON MANAGER] Deploy RabbitMQ
+# Deploy
+juju deploy --to lxd:0 rabbitmq-server
+
+juju add-relation rabbitmq-server:amqp neutron-api:amqp
+juju add-relation rabbitmq-server:amqp neutron-openvswitch:amqp
+juju add-relation rabbitmq-server:amqp nova-compute:amqp
+juju add-relation rabbitmq-server:amqp neutron-gateway:amqp
+
+# [ON MANAGER] Deploy Nova Controller
+# Create a new file controller.yaml (change the IP address with the IP address of the CONTROLLER)
+
+    nova-cloud-controller:
+      network-manager: Neutron
+      console-access-protocol: novnc
+      console-proxy-ip: 172.16.3.26
+      openstack-origin: cloud:bionic-train
+
+
+# Deploy
+    juju deploy --to lxd:0 --config controller.yaml nova-cloud-controller
+    juju add-relation nova-cloud-controller:shared-db mysql:shared-db
+    juju add-relation nova-cloud-controller:identity-service keystone:identity-service
+    juju add-relation nova-cloud-controller:amqp rabbitmq-server:amqp
+    juju add-relation nova-cloud-controller:quantum-network-service neutron-gateway:quantum-network-service
+    juju add-relation nova-cloud-controller:neutron-api neutron-api:neutron-api
+    juju add-relation nova-cloud-controller:cloud-compute nova-compute:cloud-compute
+
+# [ON MANAGER] Deploy Placement
+# Create a new file placement.yaml
+
+    placement:
+      openstack-origin: cloud:bionic-train
+      
+# Deploy
+
+    juju deploy --to lxd:0 --config placement.yaml placement
+
+    juju add-relation placement:shared-db mysql:shared-db
+    juju add-relation placement:identity-service keystone:identity-service
+    juju add-relation placement:placement nova-cloud-controller:placement
+
+
+# [ON MANAGER] Deploy Dashboard
+# Create a new file dashboard.yaml (change the IP address with the IP address of the CONTROLLER)
+    openstack-dashboard:
+      openstack-origin: cloud:bionic-train
+      os-public-hostname: 172.16.3.26
+# Deploy
+    juju deploy --to 0 --config dashboard.yaml openstack-dashboard
+
+    juju add-relation openstack-dashboard:identity-service keystone:identity-service
+    
+    
+# [ON MANAGER] Deploy Glance
+# Create a new file glance.yaml 
+    glance:
+      openstack-origin: cloud:bionic-train
+
+# Deploy
+    juju deploy --to lxd:0 --config glance.yaml glance
+
+    juju add-relation glance:image-service nova-cloud-controller:image-service
+    juju add-relation glance:image-service nova-compute:image-service
+    juju add-relation glance:shared-db mysql:shared-db
+    juju add-relation glance:identity-service keystone:identity-service
+    juju add-relation glance:amqp rabbitmq-server:amqp
+
+# [ON MANAGER] Deploy Cinder
+# Create a new file cinder.yaml 
+
+    cinder:
+      glance-api-version: 2
+      block-device: None 
+      openstack-origin: cloud:bionic-train
+
+# Deploy
+    juju deploy --to lxd:0 --config cinder.yaml cinder
+
+    juju add-relation cinder:cinder-volume-service nova-cloud-controller:cinder-volume-service
+    juju add-relation cinder:shared-db mysql:shared-db
+    juju add-relation cinder:identity-service keystone:identity-service
+    juju add-relation cinder:amqp rabbitmq-server:amqp
+    juju add-relation cinder:image-service glance:image-service
+
+# [ON MANAGER] Deploy Ceph OSD
+# Create a new file ceph-osd.yaml
+    ceph-osd:
+      osd-devices: /dev/sdb
+      source: cloud:bionic-train
+
+# Deploy
+    juju deploy --to 1 --config ceph-osd.yaml ceph-osd
+    juju add-unit --to 2 ceph-osd
+    juju add-unit --to 3 ceph-osd
+
+# [ON MANAGER] Deploy Ceph MON
+# Create a new file ceph-mon.yaml
+    ceph-mon:
+    source: cloud:bionic-train
+
+
+# Deploy
+    juju deploy --to lxd:1 --config ceph-mon.yaml ceph-mon
+    juju add-unit --to lxd:2 ceph-mon
+    juju add-unit --to lxd:3 ceph-mon
+
+    juju add-relation ceph-mon:osd ceph-osd:mon
+    juju add-relation ceph-mon:client nova-compute:ceph
+    juju add-relation ceph-mon:client glance:ceph
+    juju add-relation cinder ceph-mon
+    
+# [ON MANAGER] Deploy NTP
+# Deploy
+    juju deploy ntp
+
+    juju add-relation ceph-osd:juju-info ntp:juju-info
 
 
