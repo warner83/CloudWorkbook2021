@@ -117,12 +117,12 @@
 
 # [ON MANAGER] Deploy RabbitMQ
 # Deploy
-juju deploy --to lxd:0 rabbitmq-server
+    juju deploy --to lxd:0 rabbitmq-server
 
-juju add-relation rabbitmq-server:amqp neutron-api:amqp
-juju add-relation rabbitmq-server:amqp neutron-openvswitch:amqp
-juju add-relation rabbitmq-server:amqp nova-compute:amqp
-juju add-relation rabbitmq-server:amqp neutron-gateway:amqp
+    juju add-relation rabbitmq-server:amqp neutron-api:amqp
+    juju add-relation rabbitmq-server:amqp neutron-openvswitch:amqp
+    juju add-relation rabbitmq-server:amqp nova-compute:amqp
+    juju add-relation rabbitmq-server:amqp neutron-gateway:amqp
 
 # [ON MANAGER] Deploy Nova Controller
 # Create a new file controller.yaml (change the IP address with the IP address of the CONTROLLER)
@@ -214,7 +214,7 @@ juju add-relation rabbitmq-server:amqp neutron-gateway:amqp
 # [ON MANAGER] Deploy Ceph MON
 # Create a new file ceph-mon.yaml
     ceph-mon:
-    source: cloud:bionic-train
+        source: cloud:bionic-train
 
 
 # Deploy
