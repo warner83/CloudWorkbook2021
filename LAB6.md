@@ -13,7 +13,7 @@
     sudo minikube status
   
 # Interact with the cluster
-    snap install kubectl –classic
+    snap install kubectl --classic
     sudo kubectl cluster-info
   
   
