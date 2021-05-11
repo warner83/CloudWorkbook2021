@@ -29,17 +29,17 @@
 # Configure the module
   # Create a conf file config-map.yaml
     apiVersion: v1
-      kind: ConfigMap
-      metadata:
-        namespace: metallb-system
-        name: config
-      data:
-        config: |
-          address-pools:
-          - name: default
-            protocol: layer2
-            addresses:
-            - 192.168.1.10-192.168.1.50
+    kind: ConfigMap
+    metadata:
+      namespace: metallb-system
+      name: config
+    data:
+      config: |
+        address-pools:
+        - name: default
+          protocol: layer2
+          addresses:
+          - 192.168.1.10-192.168.1.50
 
   # Apply the configuration
     kubectl create -f  config-map.yaml
