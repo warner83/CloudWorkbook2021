@@ -97,13 +97,18 @@
                     
     kubectl apply -f autoscale.yaml
 
+    kubectl expose deployment/php-apache
+    
+
 # Instantiate the autoscale
     kubectl autoscale deployment php-apache --cpu-percent=50 --min=1 --max=10
 
 # Put some load 
-    kubectl run --generator=run-pod/v1 -it --rm load-generator --image=busybox /bin/sh
+    kubectl delete pods curl
+    
+    kubectl run curl --image=radial/busyboxplus:curl -i --tty
 
-    while true; do wget -q -O- http://php-apache.default.svc.cluster.local; done
+    while true; do curl http://php-apache.default.svc.cluster.local; done
 
 # Check autoscale
     kubectl  get hpa
