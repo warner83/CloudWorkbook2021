@@ -82,7 +82,7 @@
       template:
         metadata:
           labels:
-            run: helloworld
+            run: php-apache
         spec:
               containers:
               - name: php-apache
